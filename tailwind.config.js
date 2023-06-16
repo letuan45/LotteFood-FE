@@ -18,9 +18,10 @@ module.exports = {
       green: "#00A149",
       blue: "#219ebc",
       grey: "#d9d9d9",
+      black: "#000000",
     },
   },
-  plugins: [require("@tailwindcss/typography"), require("daisyui")], 
+  plugins: [require("@tailwindcss/typography"), require("daisyui")],
   daisyui: {
     themes: ["light", "dark", "autumn"],
   },

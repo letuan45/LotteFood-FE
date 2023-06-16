@@ -10,7 +10,8 @@ function TitleCard({ title, children, TopSideButtons, isLong}) {
         {/* Top side button, show only if present */}
         {TopSideButtons && (
           <div
-            className={`${isLong ? "w-96" : "w-56"} inline-block float-right`}
+            className="inline-block float-right"
+            style={{width: isLong ? "500px" : "250px"}}
           >
             {TopSideButtons}
           </div>

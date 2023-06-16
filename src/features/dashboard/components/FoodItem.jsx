@@ -1,5 +1,8 @@
 import React from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { addToCart } from "../../common/cartSlice";
+import { showNotification } from "../../common/headerSlice";
 
 const Status = ({ status }) => {
   if (status === 1) {
@@ -9,13 +12,27 @@ const Status = ({ status }) => {
 };
 
 const FoodItem = ({ item }) => {
+  const dispatch = useDispatch();
+  const cartCtx = useSelector((state) => state.cart);
+
+  const addToCartHandler = (item, quantity) => {
+    if (cartCtx.items.findIndex((cartItem) => cartItem.id === item.id) >= 0) {
+      dispatch(
+        showNotification({ message: "Bạn đã thêm món này vào giỏ", status: 0 })
+      );
+      return;
+    }
+    dispatch(addToCart({ ...item, quantity: quantity }));
+  };
+
   const price = item.price.toLocaleString() + "VND";
   return (
-    <li className="group col-span-1 h-36 rounded-xl overflow-hidden bg-white drop-shadow-md relative">
+    <li className="group col-span-1 h-36 rounded-xl overflow-hidden bg-white border-2 drop-shadow-md relative">
       <div className="w-full h-16 z-0 absolute bg-red opacity-10 bottom-0 rounded-md group-hover:h-full group-hover:opacity-100 duration-300"></div>
       <Link
         to="#"
         className="w-12 h-12 bg-orange-light absolute z-20 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-12 rounded-full flex justify-center items-center shadow-xl opacity-0 group-hover:opacity-100 duration-300 group-hover:-translate-y-1/2"
+        onClick={addToCartHandler.bind(this, item, 1)}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +55,7 @@ const FoodItem = ({ item }) => {
         alt="anh san pham"
       />
       <div className="absolute z-10 bottom-0 px-5 pb-2 w-full">
-        <h4 className="w-full font-bold truncate cursor-default shadow-2xl duration-300">
+        <h4 className="w-full font-bold truncate cursor-default shadow-2xl duration-300 bg-yellow text-black mb-1 p-1 text-sm rounded-md group-hover:opacity-40 text-center">
           {item.name}
         </h4>
         <div className="flex justify-between">

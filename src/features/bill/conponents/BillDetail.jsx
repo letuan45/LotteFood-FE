@@ -1,80 +1,94 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import InputText from "../../../components/Input/InputText";
-import { showNotification } from "../../common/headerSlice";
-import ErrorText from "../../../components/Typography/ErrorText";
 
-const INITIAL_LEAD_OBJ = {
-  first_name: "",
-  last_name: "",
-  email: "",
+const DUMMY_ORDER_DETAILS = {
+  items: [
+    {
+      id: 1,
+      name: "Gà rán sốt Mala",
+      amount: 2,
+      price: 30000,
+    },
+    {
+      id: 2,
+      name: "Gà rán sốt Mala",
+      amount: 2,
+      price: 30000,
+    },
+    {
+      id: 3,
+      name: "Gà rán sốt Mala",
+      amount: 2,
+      price: 30000,
+    },
+    {
+      id: 4,
+      name: "Gà rán sốt Mala",
+      amount: 2,
+      price: 30000,
+    },
+    {
+      id: 5,
+      name: "Gà rán sốt Mala",
+      amount: 2,
+      price: 30000,
+    },
+  ],
+  total: 200000,
+  discount: 20000,
+  pay: 220000,
 };
 
 const BillDetail = ({ closeModal }) => {
-  const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [leadObj, setLeadObj] = useState(INITIAL_LEAD_OBJ);
-
-  const saveNewLead = () => {
-    if (leadObj.first_name.trim() === "")
-      return setErrorMessage("First Name is required!");
-    else if (leadObj.email.trim() === "")
-      return setErrorMessage("Email id is required!");
-    else {
-      let newLeadObj = {
-        id: 7,
-        email: leadObj.email,
-        first_name: leadObj.first_name,
-        last_name: leadObj.last_name,
-        avatar: "https://reqres.in/img/faces/1-image.jpg",
-      };
-      dispatch(showNotification({ message: "New Lead Added!", status: 1 }));
-      closeModal();
-    }
-  };
-
-  const updateFormValue = ({ updateType, value }) => {
-    setErrorMessage("");
-    setLeadObj({ ...leadObj, [updateType]: value });
-  };
+  const [items, setItems] = useState(DUMMY_ORDER_DETAILS.items);
+  const [total, setTotal] = useState(DUMMY_ORDER_DETAILS.total);
+  const [discount, setDiscount] = useState(DUMMY_ORDER_DETAILS.discount);
+  const [pay, setPay] = useState(DUMMY_ORDER_DETAILS.pay);
 
   return (
-    <>
-      <InputText
-        type="text"
-        defaultValue={leadObj.first_name}
-        updateType="first_name"
-        containerStyle="mt-4"
-        labelTitle="First Name"
-        updateFormValue={updateFormValue}
-      />
+    <div className=" w-full mt-2">
+      <div className="h-72 overflow-y-auto">
+        <table className="table w-full">
+          <thead className="sticky top-0">
+            <tr>
+              <th>Món ăn</th>
+              <th>Số lượng</th>
+              <th>Giá</th>
+              <th>Đơn giá</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const price = item.price.toLocaleString() + "VND";
+              const totalPrice =
+                (item.price * item.amount).toLocaleString() + "VND";
 
-      <InputText
-        type="text"
-        defaultValue={leadObj.last_name}
-        updateType="last_name"
-        containerStyle="mt-4"
-        labelTitle="Last Name"
-        updateFormValue={updateFormValue}
-      />
-
-      <InputText
-        type="email"
-        defaultValue={leadObj.email}
-        updateType="email"
-        containerStyle="mt-4"
-        labelTitle="Email Id"
-        updateFormValue={updateFormValue}
-      />
-
-      <ErrorText styleClass="mt-16">{errorMessage}</ErrorText>
-      <div className="modal-action">
-        <button className="btn btn-primary px-6" onClick={() => saveNewLead()}>
-          Save
-        </button>
+              return (
+                <tr key={item.id}>
+                  <td>{item.name}</td>
+                  <td>{item.amount}</td>
+                  <td>{price}</td>
+                  <td>{totalPrice}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    </>
+      <div>
+        <p className="font-bold text-xl text-center">
+          Tổng tiền:
+          {" " + total.toLocaleString() + "VND"}
+        </p>
+        <p className="font-bold text-xl text-center">
+          Giảm giá:
+          {" " + discount.toLocaleString() + "VND"}
+        </p>
+        <p className="font-bold text-xl text-center">
+          Khách trả:
+          {" " + pay.toLocaleString() + "VND"}
+        </p>
+      </div>
+    </div>
   );
 };
 

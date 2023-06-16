@@ -8,6 +8,8 @@ import {
 } from "react-router-dom";
 import { themeChange } from "theme-change";
 import initializeApp from "./app/init";
+import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "./features/common/userSlice";
 
 // Importing pages
 const Layout = lazy(() => import("./containers/Layout"));
@@ -21,10 +23,19 @@ initializeApp();
 // Check for login and initialize axios
 
 function App() {
+  const dispatch = useDispatch();
+  // const user = useSelector((state) => state);
+
   useEffect(() => {
     // 👆 daisy UI themes initialization
     themeChange(true);
   }, []);
+
+  //Refresh
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    dispatch(setUser(user));
+  }, [dispatch])
 
   return (
     <>
@@ -37,12 +48,7 @@ function App() {
           {/* Place new routes over this */}
           <Route path="/app/*" element={<Layout />} />
 
-          <Route
-            path="*"
-            element={
-              <Navigate to="/login" replace />
-            }
-          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </>

@@ -7,39 +7,10 @@ import { openModal } from "../common/modalSlice";
 import { MODAL_BODY_TYPES } from "../../utils/globalConstantUtil";
 import { searchValue } from "../../utils/searchHandler";
 import { useEffect } from "react";
+import { GetAllIngredients } from "../../services/IngredientsSevice";
+import LoadingSpinner from "../../components/Indicator/LoadingSpinner";
 
-const DUMMY_INRE = [
-  {
-    id: 1,
-    name: "Muối",
-    quantity: 100,
-    unit: "Bao",
-    price: 20000,
-  },
-  {
-    id: 2,
-    name: "Đùi gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-  {
-    id: 3,
-    name: "Bột chiên giòn",
-    quantity: 50,
-    unit: "Bao",
-    price: 15000,
-  },
-  {
-    id: 4,
-    name: "Cánh gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-];
-
-const Actions = ({ changeSearchValue }) => {
+const Actions = ({ changeSearchValue, onReload}) => {
   const dispatch = useDispatch();
 
   const onChangeSearchValue = (value) => {
@@ -58,6 +29,24 @@ const Actions = ({ changeSearchValue }) => {
   return (
     <div className="flex items-center">
       <SearchBar setSearchText={onChangeSearchValue} />
+      <button className="ml-3" onClick={onReload}>
+        <div className="btn btn-neutral">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+            />
+          </svg>
+        </div>
+      </button>
       <button className="ml-3" onClick={handleOpenAddIngredient}>
         <div className="btn btn-accent">Thêm</div>
       </button>
@@ -66,9 +55,24 @@ const Actions = ({ changeSearchValue }) => {
 };
 
 function Ingredient() {
-  const [originalItems, setOriginalItems] = useState(DUMMY_INRE);
+  const [originalItems, setOriginalItems] = useState([]);
   const [renderItems, setRenderItems] = useState([]);
-  
+  const {
+    getIngredientsRes,
+    getIngredientsErr,
+    getIngredientsIsLoading,
+    reloadIngredients,
+  } = GetAllIngredients();
+
+  useEffect(() => {
+    if (getIngredientsRes) {
+      setOriginalItems([...getIngredientsRes].reverse());
+    } else if (getIngredientsErr) {
+      alert(getIngredientsErr);
+    }
+  }, [getIngredientsRes, getIngredientsErr]);
+
+
   useEffect(() => {
     if (originalItems && originalItems.length > 0) {
       setRenderItems(originalItems);
@@ -88,10 +92,20 @@ function Ingredient() {
     <>
       <TitleCard
         title="Danh sách nguyên liệu"
-        TopSideButtons={<Actions changeSearchValue={onChangeSearchValue} />}
+        TopSideButtons={
+          <Actions
+            changeSearchValue={onChangeSearchValue}
+            onReload={() => {
+              reloadIngredients();
+            }}
+          />
+        }
         isLong
       >
-        <IngList items={renderItems} />
+        {getIngredientsIsLoading && <LoadingSpinner />}
+        {!getIngredientsIsLoading && (
+          <IngList items={renderItems} />
+        )}
       </TitleCard>
     </>
   );

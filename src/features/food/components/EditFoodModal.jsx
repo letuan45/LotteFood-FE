@@ -1,78 +1,75 @@
 import { useState, useRef, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import InputText from "../../../components/Input/InputText";
 import { showNotification } from "../../common/headerSlice";
 import ErrorText from "../../../components/Typography/ErrorText";
 import TitleCard from "../../../components/Cards/TitleCard";
-
-const DUMMY_INRE = [
-  {
-    id: 1,
-    name: "Muối",
-    quantity: 100,
-    unit: "Bao",
-    price: 20000,
-  },
-  {
-    id: 2,
-    name: "Đùi gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-  {
-    id: 3,
-    name: "Bột chiên giòn",
-    quantity: 50,
-    unit: "Bao",
-    price: 15000,
-  },
-  {
-    id: 4,
-    name: "Cánh gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-];
-
-const DUMMY_TYPE = [
-  {
-    id: 1,
-    name: "Đùi gà",
-  },
-  {
-    id: 2,
-    name: "Gà Rán",
-  },
-  {
-    id: 3,
-    name: "Cánh gà",
-  },
-  {
-    id: 4,
-    name: "Phao câu",
-  },
-  {
-    id: 5,
-    name: "Combo",
-  },
-];
-
-const INITIAL_FOOD_OBJ = {
-  name: "",
-  price: "",
-  isAvtive: true
-};
+import { useSelector } from "react-redux";
+import { EditFood, GetFoodDetails } from "../../../services/FoodService";
+import { GetFoodTypes } from "../../../services/FoodService";
+import { GetAllIngredients } from "../../../services/IngredientsSevice";
 
 const EditFoodModal = ({ closeModal }) => {
   const selectRef = useRef(null);
   const dispatch = useDispatch();
   const [errorMessage, setErrorMessage] = useState("");
-  const [foodObj, setFoodObj] = useState(INITIAL_FOOD_OBJ);
-  const [foodType, setFoodType] = useState(DUMMY_TYPE);
-  const [ingredients, setIngredient] = useState(DUMMY_INRE);
-  const [isAvtive, setIsAvtive] = useState(INITIAL_FOOD_OBJ.isAvtive);
+  const [foodType, setFoodType] = useState([]);
+  const [ingredients, setIngredient] = useState([]);
+  const foodId = useSelector((state) => state.modal.extraObject).foodId;
+  const { getFoodDetailsRes, getFoodDetailsErr } = GetFoodDetails(foodId);
+  const { getFoodTypesRes, getFoodTypesErr } = GetFoodTypes();
+  const { getIngredientsRes, getIngredientsErr } = GetAllIngredients();
+  const [choosenIngredients, setChoosenIngredients] = useState([]);
+  const [choosenIngreIsChanged, setChoosenIngreIsChanged] = useState(false);
+  const nameRef = useRef(null);
+  const imgRef = useRef(null);
+  const priceRef = useRef(null);
+  const descriptionRef = useRef(null);
+  const { editFoodResponse, editFoodError, editFoodIsLoading, editFoodAction } =
+    EditFood();
+
+  useEffect(() => {
+    if (editFoodResponse) {
+      dispatch(
+        showNotification({ message: "Sửa món ăn thành công!", status: 1 })
+      );
+      closeModal();
+    } else if (editFoodError) {
+      dispatch(
+        showNotification({ message: "Sửa món ăn thất bại!", status: 0 })
+      );
+    }
+  }, [editFoodResponse, editFoodError, dispatch, closeModal]);
+
+  useEffect(() => {
+    if (getFoodTypesRes) {
+      setFoodType(getFoodTypesRes);
+    } else if (getFoodTypesErr) {
+      alert("Không load được danh mục món ăn");
+    }
+  }, [getFoodTypesRes, getFoodTypesErr]);
+
+  useEffect(() => {
+    if (getIngredientsRes) {
+      setIngredient(getIngredientsRes);
+    } else if (getIngredientsErr) {
+      alert("Không load được các nguyên liệu");
+    }
+  }, [getIngredientsRes, getIngredientsErr]);
+
+  useEffect(() => {
+    if (getFoodDetailsRes) {
+      nameRef.current.value = getFoodDetailsRes.name;
+      imgRef.current.value = getFoodDetailsRes.image;
+      priceRef.current.value = getFoodDetailsRes.price;
+      descriptionRef.current.value = getFoodDetailsRes.description;
+      selectRef.current.value = getFoodDetailsRes.category.id;
+
+      const ingres = getFoodDetailsRes.materialDTOS;
+      setChoosenIngredients(ingres);
+    } else if (getFoodDetailsErr) {
+      alert(getFoodDetailsErr);
+    }
+  }, [getFoodDetailsRes, getFoodDetailsErr]);
 
   useEffect(() => {
     setIngredient((oldIngredients) => {
@@ -82,70 +79,105 @@ const EditFoodModal = ({ closeModal }) => {
     });
   }, []);
 
-  console.log(ingredients);
-
-  const saveNewLead = () => {
-    if (foodObj.name.trim() === "")
+  const saveNewFood = (foodId) => {
+    if (nameRef.current.value.trim() === "")
       return setErrorMessage("Bạn phải cung cấp tên món ăn!");
     else if (
-      foodObj.price.trim() === "" ||
-      +foodObj.price.trim() <= 0 ||
-      isNaN(+foodObj.price.trim())
+      priceRef.current.value.trim() === "" ||
+      +priceRef.current.value.trim() === 0
     )
       return setErrorMessage("Giá không hợp lệ!");
-    else if (selectRef.current.value === "default")
+    else if (selectRef.current.value.trim() === "default")
       return setErrorMessage("Hãy chọn loại món!");
     else if (ingredients.every((item) => !item.isChecked))
       return setErrorMessage("Hãy chọn nguyên liệu!");
+    else if (descriptionRef.current.value.trim() === "")
+      return setErrorMessage("Hãy nhập mô tả");
     else {
-      dispatch(
-        showNotification({ message: "Thêm món ăn thành công!", status: 1 })
-      );
-      closeModal();
+      const choosenIngredient = ingredients
+        .filter((item) => item.isChecked === true)
+        .map((item) => {
+          return { id: item.id };
+        });
+
+      const data = {
+        name: nameRef.current.value.trim(),
+        description: descriptionRef.current.value.trim(),
+        image: imgRef.current.value.trim(),
+        price: +priceRef.current.value.trim(),
+        category: { id: selectRef.current.value },
+        materialDTOS: choosenIngredient,
+      };
+
+      editFoodAction(data, foodId);
     }
   };
 
-  const updateFormValue = ({ updateType, value }) => {
-    setErrorMessage("");
-    setFoodObj({ ...foodObj, [updateType]: value });
-  };
-
   const handleCheckboxChange = (id) => {
+    setChoosenIngreIsChanged(true);
     const updatedCheckboxes = ingredients.map((ingredient) => {
       if (ingredient.id === id) {
-        return { ...ingredient, isChecked: !ingredient.isChecked };
+        let choosenIngredient = ingredient;
+        choosenIngredient.isChecked = !ingredient.isChecked;
+        return choosenIngredient;
       }
       return ingredient;
     });
     setIngredient(updatedCheckboxes);
   };
 
-  const changeStatusHandler = () => {
-    setIsAvtive((oldState) => !oldState);
+  if (
+    choosenIngredients.length > 0 &&
+    ingredients.length > 0 &&
+    !choosenIngreIsChanged
+  ) {
+    let renderIngredients = [...ingredients];
+    for (const item of choosenIngredients) {
+      const findItemIndex = renderIngredients.findIndex(
+        (ingre) => ingre.id === item.id
+      );
+      if (findItemIndex >= 0) renderIngredients[findItemIndex].isChecked = true;
+      else renderIngredients[findItemIndex].isChecked = false;
+    }
   }
 
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="col-span-1">
         <TitleCard title="Sửa món ăn">
-          <InputText
-            type="text"
-            defaultValue={foodObj.name}
-            updateType="name"
-            labelTitle="Tên món ăn"
-            updateFormValue={updateFormValue}
-          />
+          <div className="flex flex-col">
+            <label className="block mb-1 text-sm">Tên món ăn</label>
+            <input
+              ref={nameRef}
+              type="text"
+              placeholder="Tên món ăn"
+              className="input input-bordered w-full block"
+            />
+          </div>
 
-          <InputText
-            type="text"
-            defaultValue={foodObj.price}
-            updateType="price"
-            labelTitle="Giá món ăn"
-            updateFormValue={updateFormValue}
-          />
+          <div className="flex flex-col">
+            <label className="block mb-1 text-sm mt-1">Hình món ăn</label>
+            <input
+              ref={imgRef}
+              type="text"
+              placeholder="Hình ảnh"
+              className="input input-bordered w-full block"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="block mb-1 text-sm mt-1">Giá món ăn</label>
+            <input
+              ref={priceRef}
+              type="text"
+              placeholder="Giá"
+              className="input input-bordered w-full block"
+            />
+          </div>
+
           <div className="flex items-center">
             <select
-              className="select select-bordered w-full max-w-xs mt-4 float-left mb-6"
+              className="select select-bordered w-full max-w-xs mt-4 float-left mb-1"
               defaultValue={"default"}
               ref={selectRef}
             >
@@ -160,17 +192,15 @@ const EditFoodModal = ({ closeModal }) => {
                 );
               })}
             </select>
-            <div className="form-control">
-              <label className="cursor-pointer label">
-                <span className="label-text">Đang sẵn sàng</span>
-                <input
-                  type="checkbox"
-                  checked={isAvtive}
-                  className="checkbox checkbox-secondary ml-2"
-                  onChange={changeStatusHandler}
-                />
-              </label>
-            </div>
+          </div>
+          <div className="flex flex-col">
+            <label className="block mb-1 text-sm mt-1">Mô tả món ăn</label>
+            <input
+              ref={descriptionRef}
+              type="text"
+              placeholder="Mô tả món ăn"
+              className="input input-bordered w-full block"
+            />
           </div>
         </TitleCard>
       </div>
@@ -199,7 +229,12 @@ const EditFoodModal = ({ closeModal }) => {
 
       <div className="flex col-span-2 justify-end items-center">
         <ErrorText styleClass="mr-2 text-lg">{errorMessage}</ErrorText>
-        <button className="btn btn-primary px-6" onClick={() => saveNewLead()}>
+        <button
+          className={`btn btn-primary px-6 ${
+            editFoodIsLoading ? "loading" : ""
+          }`}
+          onClick={saveNewFood.bind(this, foodId)}
+        >
           Xác nhận
         </button>
       </div>

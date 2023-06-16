@@ -1,82 +1,56 @@
-import { useState, useEffect } from "react";
-import { useDispatch } from "react-redux";
-import InputText from "../../../components/Input/InputText";
+import { useState, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { showNotification } from "../../common/headerSlice";
-import ErrorText from "../../../components/Typography/ErrorText";
 import TitleCard from "../../../components/Cards/TitleCard";
 import SearchBar from "../../../components/Input/SearchBar";
 import { searchValue } from "../../../utils/searchHandler";
 import IngList from "../../ingredients/IngList";
-import NumberInput from "../../../components/Input/NumberInput";
 import ChoosenItems from "./ChoosenItems";
-import { useCallback } from "react";
-import { useRef } from "react";
-
-const DUMMY_INRE = [
-  {
-    id: 1,
-    name: "Muối",
-    quantity: 100,
-    unit: "Bao",
-    price: 20000,
-  },
-  {
-    id: 2,
-    name: "Đùi gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-  {
-    id: 3,
-    name: "Bột chiên giòn",
-    quantity: 50,
-    unit: "Bao",
-    price: 15000,
-  },
-  {
-    id: 4,
-    name: "Cánh gà",
-    quantity: 50,
-    unit: "Cái",
-    price: 25000,
-  },
-];
-
-const DUMMY_SUPPLIER = [
-  {
-    id: 1,
-    name: "Chinsu",
-  },
-  {
-    id: 2,
-    name: "Chợ Tăng Nhơn",
-  },
-  {
-    id: 3,
-    name: "Tào lao 1",
-  },
-  {
-    id: 4,
-    name: "Tào lao 2",
-  },
-  {
-    id: 5,
-    name: "Tào lao 3",
-  },
-  {
-    id: 6,
-    name: "Tào lao 4",
-  },
-];
+import {
+  CreateIngreOrder,
+  GetSuppliers,
+} from "../../../services/IngreOrderService";
+import { GetAllIngredients } from "../../../services/IngredientsSevice";
 
 const AddIngreOrder = ({ closeModal }) => {
   const dispatch = useDispatch();
-  const [originalItems, setOriginalItems] = useState(DUMMY_INRE);
+  const user = useSelector((state) => state.auth.user);
+  const userId = user ? user.employeeId : null;
+  const [originalItems, setOriginalItems] = useState([]);
   const [renderItems, setRenderItems] = useState([]);
   const [choosenItems, setChoosenItems] = useState([]);
-  const [supplier, setSupplier] = useState(DUMMY_SUPPLIER);
+  const [supplier, setSupplier] = useState([]);
   const selectRef = useRef(null);
+  const { getSuppliersRes, getSuppliersErr } = GetSuppliers();
+  const { getIngredientsRes, getIngredientsErr } = GetAllIngredients();
+  const {
+    createIngreOrderRes,
+    createIngreOrderErr,
+    createIngreOrderIsLoading,
+    createIngreOrderAction,
+  } = CreateIngreOrder();
+
+  useEffect(() => {
+    if (createIngreOrderRes) {
+      dispatch(
+        showNotification({ message: "Tạo phiếu nhập thành công", status: 1 })
+      );
+      closeModal();
+    } else if (createIngreOrderErr) {
+      dispatch(
+        showNotification({ message: "Tạo phiếu nhập thất bại", status: 0 })
+      );
+    }
+  }, [createIngreOrderRes, createIngreOrderErr, dispatch]);
+
+  useEffect(() => {
+    if (getSuppliersRes) {
+      setSupplier(getSuppliersRes);
+    }
+    if (getIngredientsRes) {
+      setOriginalItems(getIngredientsRes);
+    }
+  }, [getSuppliersRes, getIngredientsRes]);
 
   useEffect(() => {
     if (originalItems && originalItems.length > 0) {
@@ -151,7 +125,15 @@ const AddIngreOrder = ({ closeModal }) => {
       return;
     }
 
-    console.log(items, supplierId);
+    const data = {
+      itemsDTOS: items.map((item) => {
+        return { itemId: item.id, quantity: item.amount };
+      }),
+      supplierId: supplierId,
+      staffId: userId,
+    };
+
+    createIngreOrderAction(data);
   };
 
   return (
@@ -224,7 +206,12 @@ const AddIngreOrder = ({ closeModal }) => {
         <h1 className="text-2xl font-semibold">
           Tổng tiền: <span className="text-orange">{totalPrice}</span>
         </h1>
-        <button className="btn btn-secondary ml-4" onClick={submitHandler}>
+        <button
+          className={`btn btn-secondary ml-4 ${
+            createIngreOrderIsLoading ? "loading" : ""
+          }`}
+          onClick={submitHandler}
+        >
           Xác nhận
         </button>
       </div>

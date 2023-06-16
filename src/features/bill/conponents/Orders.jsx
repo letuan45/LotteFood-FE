@@ -5,44 +5,11 @@ import {
   CONFIRMATION_MODAL_CLOSE_TYPES,
   MODAL_BODY_TYPES,
 } from "../../../utils/globalConstantUtil";
-
-const DUMMY_ORDERS = [
-  {
-    id: 1,
-    date: "03/06/2023",
-    employee: "John",
-    status: 1,
-    customer: "Le Tuan",
-  },
-  {
-    id: 2,
-    date: "03/06/2023",
-    employee: "John",
-    status: 1,
-    customer: "Le Tuan",
-  },
-  {
-    id: 3,
-    date: "03/06/2023",
-    employee: "John",
-    status: 1,
-    customer: "Le Tuan",
-  },
-  {
-    id: 4,
-    date: "03/06/2023",
-    employee: "John",
-    status: 1,
-    customer: "Le Tuan",
-  },
-  {
-    id: 5,
-    date: "03/06/2023",
-    employee: "John",
-    status: 1,
-    customer: "Le Tuan",
-  },
-];
+import { GetOrders } from "../../../services/OrderSevice";
+import { useState } from "react";
+import { useEffect } from "react";
+import { showNotification } from "../../common/headerSlice";
+import LoadingSpinner from "../../../components/Indicator/LoadingSpinner";
 
 const Status = ({ value }) => {
   if (value === 1) {
@@ -108,13 +75,32 @@ const Status = ({ value }) => {
 
 const Orders = () => {
   const dispatch = useDispatch();
-  const items = DUMMY_ORDERS;
+  const {
+    getOrdersResponse,
+    getOrderError,
+    getOrderIsLoading,
+  } = GetOrders();
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (getOrdersResponse) {
+      setItems([...getOrdersResponse].reverse());
+    } else if (getOrderError) {
+      dispatch(
+        showNotification({
+          message: "Lấy danh sách đơn hàng thất bại!",
+          status: 0,
+        })
+      );
+    }
+  }, [getOrdersResponse, getOrderError, dispatch]);
 
   const handleSubmitOrder = () => {
     dispatch(
       openModal({
         title: "Thanh toán đơn hàng",
         bodyType: MODAL_BODY_TYPES.CONFIRM_ORDER,
+        size: "lg",
       })
     );
   };
@@ -133,12 +119,13 @@ const Orders = () => {
     );
   };
 
-  const handleOpenEditOrder = () => {
+  const handleOpenEditOrder = (orderId) => {
     dispatch(
       openModal({
         title: "Chỉnh sửa đơn hàng",
         bodyType: MODAL_BODY_TYPES.EDIT_ORDER,
-        size: "md"
+        size: "xl",
+        extraObject: {orderId: orderId}
       })
     );
   };
@@ -146,6 +133,7 @@ const Orders = () => {
   return (
     <TitleCard title="Danh sách đơn hàng" topMargin="mt-2">
       {/* Leads List in table format loaded from slice after api call */}
+      {getOrderIsLoading && <LoadingSpinner/>}
       <div className="overflow-x-auto w-full">
         <table className="table w-full">
           <thead>
@@ -153,7 +141,6 @@ const Orders = () => {
               <th>Id</th>
               <th>Ngày đặt</th>
               <th>Nhân viên</th>
-              <th>Khách hàng</th>
               <th>Trạng thái</th>
               <th></th>
             </tr>
@@ -163,9 +150,8 @@ const Orders = () => {
               return (
                 <tr key={item.id}>
                   <td className="font-bold text-green">{item.id}</td>
-                  <td>{item.date}</td>
-                  <td>{item.employee}</td>
-                  <td>{item.customer}</td>
+                  <td>{item.dateOrder.split("T")[0]}</td>
+                  <td>{item.employeeName}</td>
                   <td>
                     <Status value={item.status} />
                   </td>
@@ -191,7 +177,7 @@ const Orders = () => {
                     </button>
                     <button
                       className="btn btn-active btn-accent rounded-full ml-3"
-                      onClick={handleOpenEditOrder}
+                      onClick={handleOpenEditOrder.bind(this, item.id)}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

@@ -7,7 +7,7 @@ import {
 } from "../../../utils/globalConstantUtil";
 
 const Status = ({ value }) => {
-  if (value === 1) {
+  if (value === 0) {
     return (
       <div className="badge badge-info gap-1">
         <svg
@@ -27,7 +27,7 @@ const Status = ({ value }) => {
         Chưa hoàn tất
       </div>
     );
-  } else if (value === 2) {
+  } else if (value === 1) {
     return (
       <div className="badge badge-success gap-1">
         <svg
@@ -71,7 +71,7 @@ const Status = ({ value }) => {
 const IngreOrderList = ({ items }) => {
   const dispatch = useDispatch();
 
-  const handleConfirmation = () => {
+  const handleConfirmation = (orderId) => {
     dispatch(
       openModal({
         title: "Xác nhận hoàn thành",
@@ -79,13 +79,13 @@ const IngreOrderList = ({ items }) => {
         extraObject: {
           message: `Bạn muốn xác nhận hoàn thành phiếu nhập này?`,
           type: CONFIRMATION_MODAL_CLOSE_TYPES.CONFIRM_IG_ORDER,
-          index: 1,
+          index: orderId,
         },
       })
     );
   };
 
-  const handleCancel = () => {
+  const handleCancel = (orderId) => {
     dispatch(
       openModal({
         title: "Xác nhận hủy phiếu nhập",
@@ -93,18 +93,19 @@ const IngreOrderList = ({ items }) => {
         extraObject: {
           message: `Bạn muốn hủy phiếu nhập này?`,
           type: CONFIRMATION_MODAL_CLOSE_TYPES.CANCEL_IG_ORDER,
-          index: 1,
+          index: orderId,
         },
       })
     );
   };
 
-  const openDetailHandler = () => {
+  const openDetailHandler = (itemId) => {
     dispatch(
       openModal({
         title: "Chi tiết phiếu nhập nguyên liệu",
         bodyType: MODAL_BODY_TYPES.INGRE_ORDER_DETAIL,
-        size: "lg"
+        size: "lg",
+        extraObject: {orderDetailId: itemId},
       })
     );
   };
@@ -125,10 +126,13 @@ const IngreOrderList = ({ items }) => {
         <tbody>
           {items.map((item) => {
             const totalPrice = item.totalPrice.toLocaleString() + "VND";
+            const date = item.date.split("T")[0];
+            const isHiddenButtons = !(item.status === 0);
+
             return (
               <tr key={item.id}>
                 <td className="font-bold text-green">{item.id}</td>
-                <td>{item.date}</td>
+                <td>{date}</td>
                 <td>{item.employee}</td>
                 <td className="text-orange font-semibold">{totalPrice}</td>
                 <td>
@@ -137,7 +141,7 @@ const IngreOrderList = ({ items }) => {
                 <td>
                   <button
                     className="btn btn-secondary rounded-full"
-                    onClick={openDetailHandler}
+                    onClick={openDetailHandler.bind(this, item.id)}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -155,8 +159,9 @@ const IngreOrderList = ({ items }) => {
                     </svg>
                   </button>
                   <button
-                    onClick={handleCancel}
+                    onClick={handleCancel.bind(this, item.id)}
                     className="btn rounded-full ml-3"
+                    disabled={isHiddenButtons}
                     // onClick={handleOpenEditIngredient}
                   >
                     <svg
@@ -175,9 +180,9 @@ const IngreOrderList = ({ items }) => {
                     </svg>
                   </button>
                   <button
-                    onClick={handleConfirmation}
+                    onClick={handleConfirmation.bind(this, item.id)}
                     className="btn btn-info rounded-full ml-3"
-                    // onClick={handleOpenEditIngredient}
+                    disabled={isHiddenButtons}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

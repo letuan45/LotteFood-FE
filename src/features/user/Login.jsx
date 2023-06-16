@@ -6,7 +6,8 @@ import InputText from "../../components/Input/InputText";
 import { LoginService } from "../../services/AuthService";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { showNotification } from "../common/headerSlice";
+import { setUser } from "../common/userSlice";
+import { useNavigate } from "react-router-dom";
 
 const INITIAL_LOGIN_OBJ = {
   password: "",
@@ -15,19 +16,21 @@ const INITIAL_LOGIN_OBJ = {
 
 function Login() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState("");
   const [loginObj, setLoginObj] = useState(INITIAL_LOGIN_OBJ);
   const { loginResponse, loginError, loginIsLoading, loginAction } = LoginService();
 
   useEffect(() => {
     if (loginResponse) {
-      console.log(loginResponse);
       setErrorMessage("");
-      window.location.href = "/app/order";
+      dispatch(setUser(loginResponse));
+      //window.location.href = "/app/order"; 
+      navigate("/app/order");
     } else if (loginError) {
       setErrorMessage("Đăng nhập thất bại! Vui lòng kiểm tra lại")
     }
-  }, [dispatch, loginResponse, loginError]);
+  }, [dispatch, loginResponse, loginError, navigate]);
 
   const submitForm = (e) => {
     e.preventDefault();
@@ -37,14 +40,14 @@ function Login() {
     if (loginObj.password.trim() === "")
       return setErrorMessage("Mật khẩu không được để trống!");
     else {
-      // Call API to check user credentials and save token in localstorage
-      // localStorage.setItem("token", "DumyTokenHere");
-      // const data = {
-      //   username: loginObj.username.trim(),
-      //   password: loginObj.password.trim(),
-      // };
-      // loginAction(data);
-      window.location.href = "/app/order";
+      //Call API to check user credentials and save token in localstorage
+      localStorage.setItem("token", "DumyTokenHere");
+      const data = {
+        username: loginObj.username.trim(),
+        password: loginObj.password.trim(),
+      };
+      loginAction(data);
+      //window.location.href = "/app/order";
     }
   };
 

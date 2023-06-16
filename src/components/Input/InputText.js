@@ -9,6 +9,7 @@ function InputText({
   placeholder,
   updateFormValue,
   updateType,
+  isReadonly,
 }) {
   const [value, setValue] = useState(defaultValue);
 
@@ -27,9 +28,11 @@ function InputText({
       <input
         type={type || "text"}
         value={value}
+        readOnly={isReadonly}
+        disabled={isReadonly}
         placeholder={placeholder || ""}
         onChange={(e) => updateInputValue(e.target.value)}
-        className="input  input-bordered w-full "
+        className="input input-bordered w-full "
       />
     </div>
   );

@@ -6,13 +6,12 @@ import { MODAL_BODY_TYPES } from "../../utils/globalConstantUtil";
 const IngList = ({ items, isMinimal, chooseItem }) => {
   const dispatch = useDispatch();
 
-  const handleOpenEditIngredient = () => {
-    const fakeObj = { id: 1, name: "Muối", unit: "Bao", price: 10000 };
+  const handleOpenEditIngredient = (item) => {
     dispatch(
       openModal({
         title: "Sửa nguyên liệu",
         bodyType: MODAL_BODY_TYPES.EDIT_INGRE,
-        extraObject: fakeObj,
+        extraObject: item,
       })
     );
   };
@@ -49,14 +48,14 @@ const IngList = ({ items, isMinimal, chooseItem }) => {
             return (
               <tr key={item.id} className="cursor-default">
                 <td className="font-semibold text-green">{item.name}</td>
-                <td>{item.quantity}</td>
+                <td>{item.stock}</td>
                 {!isMinimal && <td>{item.unit}</td>}
                 <td className="text-orange font-semibold">{price}</td>
                 {!isMinimal && (
                   <td>
                     <button
                       className="btn btn-secondary"
-                      onClick={handleOpenEditIngredient}
+                      onClick={handleOpenEditIngredient.bind(this, item)}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

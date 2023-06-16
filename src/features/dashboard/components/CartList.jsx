@@ -1,6 +1,61 @@
+import { useDispatch, useSelector } from "react-redux";
 import CartItem from "./CartItem";
+import { useEffect } from "react";
+import { clearCart, replaceCart } from "../../common/cartSlice";
+import { CreateOrder } from "../../../services/OrderSevice";
+import { showNotification } from "../../common/headerSlice";
 
-const CartList = ({ items }) => {
+const CartList = () => {
+  const dispatch = useDispatch();
+  const cart = JSON.parse(localStorage.getItem("cart"))
+    ? JSON.parse(localStorage.getItem("cart"))
+    : null;
+  const cartCtx = useSelector((state) => state.cart);
+  const user = useSelector((state) => state.auth.user);
+  const {
+    createOrderRes,
+    createOrderError,
+    createOrderIsLoading,
+    createOrderAction,
+  } = CreateOrder();
+
+  useEffect(() => {
+    if (cart && cart.length > 0) {
+      dispatch(replaceCart(cart));
+    }
+    // eslint-disable-next-line
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (createOrderRes) {
+      dispatch(
+        showNotification({ message: "Tạo đơn hàng thành công!", status: 1 })
+      );
+      dispatch(clearCart());
+    } else if (createOrderError) {
+      dispatch(
+        showNotification({ message: "Tạo đơn hàng thất bại!", status: 0 })
+      );
+    }
+  }, [createOrderRes, createOrderError, dispatch]);
+
+  const items = cartCtx.items;
+
+  const totalPrice =
+    items.length > 0
+      ? items.reduce((acc, i) => acc + i.price * i.quantity, 0)
+      : 0;
+
+  const submitOrderHandler = () => {
+    const data = {
+      foodDTOS: items.map((item) => {
+        return { itemId: item.id, quantity: item.quantity };
+      }),
+      staffId: user.id,
+    };
+    createOrderAction(data);
+  };
+
   let content;
   if (!items || items.length === 0) {
     content = (
@@ -25,26 +80,25 @@ const CartList = ({ items }) => {
   } else {
     content = (
       <div>
-        <ul className="h-72 overflow-y-scroll">
+        <ul className="h-96 overflow-y-scroll">
           {items.map((item) => (
-            <CartItem item={item} key={item.id}/>
+            <CartItem item={item} key={item.id} />
           ))}
         </ul>
         {/* Summary */}
         <div className="mt-5 border-t-2 border-dashed">
-          <div className="flex text-lg justify-between pt-1">
-            <div className="font-semibold">Tổng giá: </div>
-            <div className="font-bold">200,000VND</div>
-          </div>
-          <div className="flex text-lg justify-between pt-1">
-            <div className="font-semibold">Giảm giá: </div>
-            <div className="font-bold text-red">50,000VND</div>
-          </div>
           <div className="flex text-xl justify-between pt-1">
             <div className="font-semibold">Tổng tiền: </div>
-            <div className="font-bold text-green">150,000VND</div>
+            <div className="font-bold text-green">
+              {totalPrice.toLocaleString() + "VND"}
+            </div>
           </div>
-          <button className="btn mt-6 w-full">
+          <button
+            className={`btn mt-6 w-full ${
+              createOrderIsLoading ? "loading" : ""
+            }`}
+            onClick={submitOrderHandler}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
